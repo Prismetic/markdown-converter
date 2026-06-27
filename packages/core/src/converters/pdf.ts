@@ -1,15 +1,23 @@
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/build/pdf.mjs';
-import { createRequire } from 'node:module';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api.js';
 import type { ConversionResult } from '../types.js';
 
-// Resolve the pdfjs worker so it can run inline (no Worker thread) in Node.js.
-// createRequire(import.meta.url) is supported by vitest's SSR transform; it's
-// the portable ESM alternative to import.meta.resolve which vite doesn't expose.
-const _require = createRequire(import.meta.url);
-GlobalWorkerOptions.workerSrc = _require.resolve('pdfjs-dist/build/pdf.worker.mjs');
+// Lazily resolve the pdfjs worker path — Node.js only.
+// In browsers this block is never reached; node:module stays external in the
+// browser ESM bundle so the dynamic import below doesn't get inlined.
+let _workerSrcResolved = false;
+async function ensureWorkerSrc(): Promise<void> {
+  if (_workerSrcResolved) return;
+  _workerSrcResolved = true;
+  if (typeof process !== 'undefined' && typeof process.versions?.node === 'string') {
+    const { createRequire } = await import('node:module');
+    const _require = createRequire(import.meta.url);
+    GlobalWorkerOptions.workerSrc = _require.resolve('pdfjs-dist/build/pdf.worker.mjs');
+  }
+}
 
 export async function convertPdf(input: Uint8Array): Promise<ConversionResult> {
+  await ensureWorkerSrc();
   const start = Date.now();
   const inputBytes = input.byteLength;
 

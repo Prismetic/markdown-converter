@@ -12,6 +12,10 @@ const isBrowser = target === "browser";
 
 const nodeExternals = ["fs", "path", "os", "stream", "crypto", "zlib", "buffer", "events", "url", "util", "http", "https", "net", "tls"];
 
+// node:module is Node-only; mark external for browser so its dynamic import
+// in pdf.ts stays as-is in the output (the guarded code path never runs in browsers).
+const browserExternals = ["node:module"];
+
 export default {
   input: "src/index.ts",
   output: isBrowser
@@ -19,6 +23,7 @@ export default {
         file: "dist/browser/index.esm.js",
         format: "esm",
         sourcemap: true,
+        inlineDynamicImports: true,
       }
     : {
         file: "dist/node/index.cjs",
@@ -39,5 +44,5 @@ export default {
       declarationMap: false,
     }),
   ],
-  external: isBrowser ? [] : nodeExternals,
+  external: isBrowser ? browserExternals : nodeExternals,
 };
