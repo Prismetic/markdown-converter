@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Markdown Converter",
+  "version": "1.0.0",
+  "description": "Convert DOCX, PDF, XLSX, HTML and 6 more formats to Markdown — locally, with zero network access.",
+  "minimum_chrome_version": "120",
+  "author": "Prismetic",
+  "homepage_url": "https://github.com/prismetic/markdown-converter",
+  "icons": {
+    "32": "icons/icon32.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "32": "icons/icon32.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Markdown Converter"
+  },
+  "permissions": [],
+  "host_permissions": []
+}
