@@ -1,28 +1,43 @@
-export class NotImplementedError extends Error {
-  constructor(message = "Not implemented") {
-    super(message);
-    this.name = "NotImplementedError";
+export type { FidelityLevel, ConversionStats, ConversionResult, ConvertOpts } from './types.js';
+export { detectFormat } from './detect.js';
+export type { SupportedFormat } from './detect.js';
+
+import { detectFormat } from './detect.js';
+import type { ConversionResult, ConvertOpts } from './types.js';
+
+export async function convert(
+  input: Uint8Array,
+  filename: string,
+  _opts?: ConvertOpts
+): Promise<ConversionResult> {
+  const start = Date.now();
+  const inputBytes = input.byteLength;
+  const format = detectFormat(filename);
+
+  if (format === null) {
+    const dot = filename.lastIndexOf('.');
+    const ext = dot !== -1 ? filename.slice(dot) : filename;
+    return {
+      markdown: '',
+      stats: {
+        fidelity: 'failed',
+        warnings: [`Unsupported format: ${ext}`],
+        durationMs: Date.now() - start,
+        inputBytes,
+        outputBytes: 0,
+      },
+    };
   }
-}
 
-export type ConversionInput = {
-  /** Raw file bytes */
-  data: Uint8Array;
-  /** MIME type or file extension hint, e.g. "application/pdf" or ".docx" */
-  mimeType: string;
-};
-
-export type ConversionResult = {
-  markdown: string;
-  warnings: string[];
-};
-
-/**
- * Convert a document buffer to Markdown.
- * Stub — throws NotImplementedError until format converters are wired in.
- */
-export function convert(_input: ConversionInput): Promise<ConversionResult> {
-  throw new NotImplementedError(
-    "convert() is not yet implemented. Format converters will be wired in subsequent subtasks."
-  );
+  // Stub: dispatch to converter modules wired in subsequent subtasks (GST-8+)
+  return {
+    markdown: '',
+    stats: {
+      fidelity: 'failed',
+      warnings: [`Converter for ${format} not yet implemented`],
+      durationMs: Date.now() - start,
+      inputBytes,
+      outputBytes: 0,
+    },
+  };
 }

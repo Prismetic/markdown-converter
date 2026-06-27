@@ -60,10 +60,10 @@ function installPoison(): () => void {
 // ─── Basic API shape (no poison needed) ──────────────────────────────────────
 
 describe("@tool/core: module surface", () => {
-  it("exports convert() and NotImplementedError", async () => {
+  it("exports convert() and detectFormat()", async () => {
     const mod = await import("../index.js");
-    expect(mod.NotImplementedError).toBeDefined();
     expect(mod.convert).toBeTypeOf("function");
+    expect(mod.detectFormat).toBeTypeOf("function");
   });
 });
 
