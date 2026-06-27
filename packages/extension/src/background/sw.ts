@@ -16,6 +16,9 @@ async function ensureOffscreenDoc(): Promise<void> {
     url: 'src/offscreen/offscreen.html',
     reasons: [chrome.offscreen.Reason.WORKERS],
     justification: 'PDF conversion via pdfjs-dist web worker',
+  }).catch(async (e: unknown) => {
+    // Guard against TOCTOU: another concurrent call may have created the doc first.
+    if (!(await chrome.offscreen.hasDocument())) throw e;
   });
 }
 
