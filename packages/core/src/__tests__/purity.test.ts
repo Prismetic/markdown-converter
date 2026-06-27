@@ -65,19 +65,17 @@ async function runPure(fn: () => Promise<ConversionResult>): Promise<{
     const proxyTarget = (val as object) ?? {};
     (globalThis as Record<string, unknown>)[key] = new Proxy(proxyTarget, {
       get(target, prop) {
-        // Find the frame DIRECTLY AFTER the proxy handler — that is the actual
-        // site that accessed this global.  If it's in our src/converters/ and
-        // not in node_modules, it's a real violation.
+        // frames[0] after slice(2) is the DIRECT caller of this property access
+        // (the code that wrote `Buffer.from(...)`). Libraries like JSZip call
+        // Buffer.from synchronously, leaving our converter frame further up the
+        // stack — so checking only frames[0] avoids false positives from libraries.
         const frames = (new Error().stack ?? "").split("\n").slice(2);
-        const callerFrame = frames.find(
-          (f) => f.includes("packages/core") && !f.includes("purity.test"),
-        );
+        const directCaller = frames[0] ?? "";
         if (
-          callerFrame &&
-          callerFrame.includes("/src/converters/") &&
-          !callerFrame.includes("/node_modules/")
+          directCaller.includes("/src/converters/") &&
+          !directCaller.includes("/node_modules/")
         ) {
-          violation ??= `${key}.${String(prop)} accessed from converter: ${callerFrame.trim()}`;
+          violation ??= `${key}.${String(prop)} accessed from converter: ${directCaller.trim()}`;
         }
         return Reflect.get(target, prop);
       },

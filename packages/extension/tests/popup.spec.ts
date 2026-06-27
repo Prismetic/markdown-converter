@@ -7,7 +7,7 @@ import { join, resolve, dirname } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const EXTENSION_DIR = resolve(__dirname, '..', '_dist');
-const FIXTURES_DIR = join(__dirname, 'fixtures');
+const INPUTS_DIR = resolve(__dirname, '..', '..', 'core', 'golden', 'inputs');
 const SNAPSHOTS_DIR = join(__dirname, '..', '..', 'core', 'golden', 'snapshots');
 
 // ------------------------------------------------------------------
@@ -82,7 +82,7 @@ for (const fmt of FORMATS) {
     await page.waitForLoadState('domcontentloaded');
 
     // 2. Drop golden fixture via the file input
-    const fixtureFile = join(FIXTURES_DIR, `sample.${fmt}`);
+    const fixtureFile = join(INPUTS_DIR, `sample.${fmt}`);
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles(fixtureFile);
 

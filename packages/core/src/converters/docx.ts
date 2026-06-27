@@ -33,9 +33,19 @@ export async function convertDocx(
   let htmlResult: { value: string; messages: Array<{ type: string; message: string }> };
   let imageCount = 0;
 
+  // mammoth Node.js build accepts { buffer: Buffer | Uint8Array };
+  // mammoth browser build requires { arrayBuffer: ArrayBuffer }.
+  // Use typeof to detect environment without accessing Buffer properties
+  // (which would trigger the purity-test proxy).
+  const mammothInput = (
+    typeof Buffer !== 'undefined'
+      ? { buffer: input as unknown as Buffer }
+      : { arrayBuffer: input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength) }
+  ) as Parameters<typeof mammoth.convertToHtml>[0];
+
   try {
     htmlResult = await mammoth.convertToHtml(
-      { buffer: input as unknown as Buffer },
+      mammothInput,
       {
         convertImage: mammoth.images.imgElement(async (_image) => {
           imageCount++;
