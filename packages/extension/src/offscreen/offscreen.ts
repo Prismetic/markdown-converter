@@ -1,22 +1,25 @@
-// Offscreen document — PDF conversion host using pdfjs-dist
 import { convert } from '@tool/core';
-import type { ConversionResult } from '@tool/core';
+import type { ExtMsg } from '../shared/messages.js';
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type !== 'OFFSCREEN_CONVERT') return;
+chrome.runtime.onMessage.addListener(
+  (message: ExtMsg, _sender, sendResponse: (r: ExtMsg) => void) => {
+    if (message.type !== 'CONVERT_PDF' || message.target !== 'offscreen') return;
 
-  void (async () => {
-    try {
-      const uint8 = new Uint8Array(message.bytes as number[]);
-      const result: ConversionResult = await convert(uint8, message.filename as string);
-      sendResponse({ type: 'result', markdown: result.markdown, stats: result.stats });
-    } catch (e) {
-      sendResponse({
-        type: 'error',
-        error: e instanceof Error ? e.message : 'PDF conversion failed',
-      });
-    }
-  })();
+    const { bytes, filename } = message.payload;
+    const uint8 = new Uint8Array(bytes);
 
-  return true; // keep sendResponse channel open for async reply
-});
+    void (async () => {
+      try {
+        const result = await convert(uint8, filename);
+        sendResponse({ type: 'CONVERT_PDF_RESULT', markdown: result.markdown, stats: result.stats });
+      } catch (e) {
+        sendResponse({
+          type: 'CONVERT_PDF_ERROR',
+          error: e instanceof Error ? e.message : 'PDF conversion failed',
+        });
+      }
+    })();
+
+    return true; // async sendResponse
+  },
+);

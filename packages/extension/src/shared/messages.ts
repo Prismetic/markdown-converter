@@ -3,6 +3,6 @@ export type { ConversionStats } from '@tool/core';
 import type { ConversionStats } from '@tool/core';
 
 export type ExtMsg =
-  | { type: 'convert'; file: Uint8Array; filename: string }
-  | { type: 'result'; markdown: string; stats?: ConversionStats }
-  | { type: 'error'; error: string };
+  | { type: 'CONVERT_PDF'; payload: { bytes: number[]; filename: string }; target?: 'offscreen' }
+  | { type: 'CONVERT_PDF_RESULT'; markdown: string; stats: ConversionStats }
+  | { type: 'CONVERT_PDF_ERROR'; error: string };

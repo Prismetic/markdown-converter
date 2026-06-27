@@ -1,4 +1,5 @@
-// MV3 service worker — lifecycle + PDF relay via offscreen doc
+import type { ExtMsg } from '../shared/messages.js';
+
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
 sw.addEventListener('install', () => {
@@ -13,30 +14,33 @@ async function ensureOffscreenDoc(): Promise<void> {
   if (await chrome.offscreen.hasDocument()) return;
   await chrome.offscreen.createDocument({
     url: 'src/offscreen/offscreen.html',
-    reasons: [chrome.offscreen.Reason.WORKERS],
-    justification: 'PDF conversion via pdfjs-dist web worker',
+    reasons: [chrome.offscreen.Reason.BLOBS],
+    justification: 'PDF text extraction via pdfjs-dist',
   });
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type !== 'CONVERT_PDF') return;
+chrome.runtime.onMessage.addListener(
+  (message: ExtMsg, _sender, sendResponse: (r: ExtMsg) => void) => {
+    if (message.type !== 'CONVERT_PDF' || message.target === 'offscreen') return;
 
-  void (async () => {
-    try {
-      await ensureOffscreenDoc();
-      const result: unknown = await chrome.runtime.sendMessage({
-        type: 'OFFSCREEN_CONVERT',
-        bytes: message.bytes as number[],
-        filename: message.filename as string,
-      });
-      sendResponse(result);
-    } catch (e) {
-      sendResponse({
-        type: 'error',
-        error: e instanceof Error ? e.message : 'PDF conversion unavailable',
-      });
-    }
-  })();
+    void (async () => {
+      try {
+        await ensureOffscreenDoc();
+        const fwdMsg: ExtMsg = {
+          type: 'CONVERT_PDF',
+          payload: message.payload,
+          target: 'offscreen',
+        };
+        const result = await chrome.runtime.sendMessage(fwdMsg) as ExtMsg | undefined;
+        sendResponse(result ?? { type: 'CONVERT_PDF_ERROR', error: 'No response from offscreen' });
+      } catch (e) {
+        sendResponse({
+          type: 'CONVERT_PDF_ERROR',
+          error: e instanceof Error ? e.message : 'PDF conversion unavailable',
+        });
+      }
+    })();
 
-  return true; // keep sendResponse channel open for async reply
-});
+    return true; // keep sendResponse channel open for async reply
+  },
+);

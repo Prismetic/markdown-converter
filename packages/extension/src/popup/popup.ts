@@ -1,7 +1,8 @@
 import { convert, detectFormat } from '@tool/core';
-import type { ConversionResult, ConversionStats } from '@tool/core';
+import type { ConversionResult } from '@tool/core';
 import { fileToUint8 } from '../shared/fileToUint8.js';
 import { renderStats } from './stats.js';
+import type { ExtMsg } from '../shared/messages.js';
 
 const MAX_SIZE = 50 * 1024 * 1024;
 const SUPPORTED_EXTS = 'docx, xlsx, html, pptx, txt, md, csv, json, xml, pdf';
@@ -97,24 +98,24 @@ async function handleFile(file: File): Promise<void> {
 
 function convertViaSw(uint8: Uint8Array, filename: string): Promise<ConversionResult> {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(
-      { type: 'CONVERT_PDF', bytes: Array.from(uint8), filename },
-      (response: { type: string; markdown?: string; stats?: ConversionStats; error?: string } | undefined) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message ?? 'PDF conversion unavailable'));
-          return;
-        }
-        if (!response || response.type === 'error') {
-          reject(new Error(response?.error ?? 'PDF conversion failed'));
-          return;
-        }
-        if (response.markdown == null || response.stats == null) {
-          reject(new Error('PDF conversion unavailable'));
-          return;
-        }
-        resolve({ markdown: response.markdown, stats: response.stats });
-      },
-    );
+    const msg: ExtMsg = { type: 'CONVERT_PDF', payload: { bytes: Array.from(uint8), filename } };
+    chrome.runtime.sendMessage(msg, (response: ExtMsg | undefined) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message ?? 'PDF conversion unavailable'));
+        return;
+      }
+      if (!response || response.type === 'CONVERT_PDF_ERROR') {
+        reject(new Error(
+          response?.type === 'CONVERT_PDF_ERROR' ? response.error : 'PDF conversion failed',
+        ));
+        return;
+      }
+      if (response.type !== 'CONVERT_PDF_RESULT') {
+        reject(new Error('PDF conversion unavailable'));
+        return;
+      }
+      resolve({ markdown: response.markdown, stats: response.stats });
+    });
   });
 }
 
