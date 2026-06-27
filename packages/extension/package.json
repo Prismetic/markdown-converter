@@ -7,13 +7,17 @@
     "build": "vite build",
     "dev": "vite build --watch",
     "test": "vitest run",
-    "test:e2e": "echo 'E2E not yet configured' && exit 0"
+    "test:unit": "vitest run tests/unit",
+    "test:e2e": "playwright test",
+    "size-check": "bash ../../scripts/check-size.sh _dist"
   },
   "dependencies": {
     "@tool/core": "*"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
     "@types/chrome": "^0.2.0",
+    "happy-dom": "^20.10.6",
     "terser": "^5.48.0",
     "typescript": "^5.9.3",
     "vite": "^5.4.19",
