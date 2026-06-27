@@ -26,10 +26,8 @@ const test = base.extend<ExtensionFixtures>({
       `--disable-extensions-except=${EXTENSION_DIR}`,
       `--load-extension=${EXTENSION_DIR}`,
     ];
-    if (process.env.CI) {
-      // New headless mode supports extension loading (Chrome 112+).
-      args.push('--headless=new');
-    }
+    // headless: false — Chrome extension APIs (offscreen, service workers, web
+    // workers) require non-headless mode. CI supplies a virtual display via xvfb-run.
     const context = await chromium.launchPersistentContext('', {
       headless: false,
       args,
