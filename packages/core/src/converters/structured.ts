@@ -1,31 +1,62 @@
 import type { ConversionResult } from '../types.js';
-import * as XLSX from 'xlsx';
 
-function sheetToGfm(sheet: XLSX.WorkSheet): string {
-  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' }) as unknown[][];
+// ── CSV: pure-JS parser (no Buffer dependency) ───────────────────────────────
+// SheetJS (xlsx) calls Buffer.from() at runtime, which breaks browser purity.
+// This parser uses only TextDecoder and standard string ops.
+
+function parseCSVText(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else {
+        field += c;
+      }
+    } else {
+      if (c === '"') {
+        inQuotes = true;
+      } else if (c === ',') {
+        row.push(field); field = '';
+      } else if (c === '\n' || c === '\r') {
+        if (c === '\r' && text[i + 1] === '\n') i++;
+        row.push(field); field = '';
+        rows.push(row);
+        row = [];
+      } else {
+        field += c;
+      }
+    }
+  }
+  row.push(field);
+  if (row.length > 0 && row.some(f => f !== '')) rows.push(row);
+  return rows;
+}
+
+function rowsToGfm(rows: string[][]): string {
   if (rows.length === 0) return '';
-
-  const stringRows = rows.map(row =>
-    row.map(cell => String(cell ?? '').replace(/\r?\n/g, ' ').replace(/\|/g, '\\|')),
-  );
-  const header = stringRows[0];
-  const separator = header.map(() => '---');
-
-  const lines = [
+  const escape = (v: string) => v.replace(/\r?\n/g, ' ').replace(/\|/g, '\\|');
+  const header = rows[0].map(escape);
+  const sep = header.map(() => '---');
+  return [
     '| ' + header.join(' | ') + ' |',
-    '| ' + separator.join(' | ') + ' |',
-    ...stringRows.slice(1).map(row => '| ' + row.join(' | ') + ' |'),
-  ];
-  return lines.join('\n');
+    '| ' + sep.join(' | ') + ' |',
+    ...rows.slice(1).map(row => '| ' + row.map(escape).join(' | ') + ' |'),
+  ].join('\n');
 }
 
 export function convertCsv(input: Uint8Array): ConversionResult {
   const start = Date.now();
   try {
-    const wb = XLSX.read(input, { type: 'array' });
-    const sheetName = wb.SheetNames[0];
-    const sheet = wb.Sheets[sheetName];
-    const markdown = sheetToGfm(sheet);
+    const text = new TextDecoder().decode(input);
+    const rows = parseCSVText(text);
+    const markdown = rowsToGfm(rows);
     return {
       markdown,
       stats: {

@@ -10,7 +10,7 @@ function fillMerges(ws: XLSX.WorkSheet): void {
     for (let r = merge.s.r; r <= merge.e.r; r++) {
       for (let c = merge.s.c; c <= merge.e.c; c++) {
         if (r === merge.s.r && c === merge.s.c) continue;
-        ws[XLSX.utils.encode_cell({ r, c })] = { ...topLeft };
+        ws[XLSX.utils.encode_cell({ r, c })] = { v: topLeft.v, w: topLeft.w, t: topLeft.t, z: topLeft.z };
       }
     }
   }
@@ -24,7 +24,7 @@ function sheetToGfm(ws: XLSX.WorkSheet): string {
     defval: '',
   }) as string[][];
 
-  if (rows.length === 0) return '';
+  if (rows.length === 0 || rows[0].length === 0) return '';
 
   const escape = (v: unknown) =>
     String(v ?? '').replace(/\r?\n/g, ' ').replace(/\|/g, '\\|');
@@ -68,9 +68,9 @@ export async function convertXlsx(
     fillMerges(ws);
     const table = sheetToGfm(ws);
     if (!table) {
-      sections.push(`<!-- sheet ${name}: empty -->`);
+      sections.push(`<!-- sheet ${name.replace(/[\r\n]/g, '_')}: empty -->`);
     } else {
-      sections.push(`## ${name}\n\n${table}`);
+      sections.push(`## ${name.replace(/[\r\n]/g, '_')}\n\n${table}`);
     }
   }
 

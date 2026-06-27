@@ -1,0 +1,16 @@
+```json
+{
+  "title": "Sample Document",
+  "version": 1,
+  "author": {
+    "name": "Jane Doe",
+    "email": "jane@example.com"
+  },
+  "tags": [
+    "golden",
+    "test",
+    "sample"
+  ],
+  "published": true
+}
+```

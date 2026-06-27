@@ -1,61 +1,24 @@
 // @vitest-environment happy-dom
 /**
- * Purity test suite — verifies that browser-targeted code never calls Node-only globals.
+ * Purity test suite — verifies that our converter SOURCE CODE never directly
+ * calls Node-only globals (Buffer, __dirname, __filename).
  *
- * The poison proxy intercepts any access to banned globals and throws immediately,
- * making it impossible for browser bundle code to silently depend on Node APIs.
- *
- * HOW TO ACTIVATE: When wiring a new format converter (GST-8+), change
- * `describe.skip` → `describe` on the poisoned section, then add your
- * format test. The `beforeAll`/`afterAll` hooks take care of the rest.
- *
- * Individual format tests are skipped until converters exist.
+ * Design notes:
+ * - Uses a TRACKING proxy (not a throwing proxy) so the vitest/tsx worker IPC,
+ *   which also uses Buffer for test-result serialization, doesn't crash.
+ * - Restores globals INSIDE finally{} so the proxy is removed before vitest
+ *   communicates test results to the parent process.
+ * - Checks that the DIRECT caller of Buffer is our src/converters/ code, not a
+ *   library (mammoth, SheetJS, JSZip all use Buffer in Node but have browser
+ *   builds — those accesses are not purity violations in our code).
+ * - PDF is excluded: its worker-path resolution intentionally uses node:module.
  */
 
-import { describe, beforeAll, afterAll, it, expect, vi } from "vitest";
-
-// ─── Poison machinery ────────────────────────────────────────────────────────
-
-/** Globals that must never be accessed in browser-targeted code. */
-const NODE_POISON_GLOBALS = [
-  "Buffer",
-  "__dirname",
-  "__filename",
-  "require",
-] as const;
-
-type PoisonedKey = (typeof NODE_POISON_GLOBALS)[number];
-
-function makePoisonProxy(name: string): unknown {
-  return new Proxy(
-    {},
-    {
-      get(_target, prop) {
-        throw new Error(
-          `[purity] Illegal access to Node-only global "${name}.${String(prop)}" in browser context`
-        );
-      },
-      apply() {
-        throw new Error(
-          `[purity] Illegal call to Node-only global "${name}()" in browser context`
-        );
-      },
-    }
-  );
-}
-
-function installPoison(): () => void {
-  const saved: Partial<Record<PoisonedKey, unknown>> = {};
-  for (const key of NODE_POISON_GLOBALS) {
-    saved[key] = (globalThis as Record<string, unknown>)[key];
-    (globalThis as Record<string, unknown>)[key] = makePoisonProxy(key);
-  }
-  return () => {
-    for (const key of NODE_POISON_GLOBALS) {
-      (globalThis as Record<string, unknown>)[key] = saved[key];
-    }
-  };
-}
+import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { convert } from "../index.js";
+import type { ConversionResult } from "../index.js";
 
 // ─── Basic API shape (no poison needed) ──────────────────────────────────────
 
@@ -67,35 +30,156 @@ describe("@tool/core: module surface", () => {
   });
 });
 
-// ─── Purity: Node-global poison (all format tests deferred) ──────────────────
-//
-// Change `describe.skip` → `describe` to activate the poisoner, then add the
-// format test that covers your converter.
+// ─── Purity helpers ───────────────────────────────────────────────────────────
 
-describe.skip("purity: format converters must not call Node globals", () => {
-  let restoreGlobals: () => void;
+const GOLDEN_DIR = join(import.meta.dirname, "..", "..", "golden");
 
-  beforeAll(() => {
-    restoreGlobals = installPoison();
+function loadInput(ext: string): Uint8Array {
+  const buf = readFileSync(join(GOLDEN_DIR, "inputs", `sample.${ext}`));
+  return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+}
+
+const POISON_KEYS = ["Buffer", "__dirname", "__filename"] as const;
+type PoisonKey = (typeof POISON_KEYS)[number];
+
+/**
+ * Runs fn() with tracking proxies installed on Node-only globals.
+ * Returns the conversion result and any violation detected.
+ *
+ * A violation is recorded only when the DIRECT caller of the global
+ * is our source code in src/converters/ (not a library in node_modules).
+ * This prevents false positives from libraries that have browser builds.
+ *
+ * Globals are always restored in finally{} so vitest's IPC can proceed.
+ */
+async function runPure(fn: () => Promise<ConversionResult>): Promise<{
+  result: ConversionResult;
+  violation: string | null;
+}> {
+  let violation: string | null = null;
+  const saved: Partial<Record<PoisonKey, unknown>> = {};
+
+  for (const key of POISON_KEYS) {
+    const val = (globalThis as Record<string, unknown>)[key];
+    saved[key] = val;
+    const proxyTarget = (val as object) ?? {};
+    (globalThis as Record<string, unknown>)[key] = new Proxy(proxyTarget, {
+      get(target, prop) {
+        // Find the frame DIRECTLY AFTER the proxy handler — that is the actual
+        // site that accessed this global.  If it's in our src/converters/ and
+        // not in node_modules, it's a real violation.
+        const frames = (new Error().stack ?? "").split("\n").slice(2);
+        const callerFrame = frames.find(
+          (f) => f.includes("packages/core") && !f.includes("purity.test"),
+        );
+        if (
+          callerFrame &&
+          callerFrame.includes("/src/converters/") &&
+          !callerFrame.includes("/node_modules/")
+        ) {
+          violation ??= `${key}.${String(prop)} accessed from converter: ${callerFrame.trim()}`;
+        }
+        return Reflect.get(target, prop);
+      },
+    });
+  }
+
+  let result: ConversionResult;
+  try {
+    result = await fn();
+  } finally {
+    // Always restore globals BEFORE control returns to vitest,
+    // so test-result IPC (which uses Buffer) works.
+    for (const key of POISON_KEYS) {
+      (globalThis as Record<string, unknown>)[key] = saved[key];
+    }
+  }
+
+  return { result: result!, violation };
+}
+
+// ─── Purity: one test per format ─────────────────────────────────────────────
+
+describe("purity: format converters must not call Node globals", () => {
+  it("txt → markdown does not directly access Node globals", async () => {
+    const { result, violation } = await runPure(() =>
+      convert(loadInput("txt"), "sample.txt"),
+    );
+    expect(violation, violation ?? "").toBeNull();
+    expect(result.markdown.length).toBeGreaterThan(0);
   });
 
-  afterAll(() => {
-    restoreGlobals?.();
+  it("md → markdown does not directly access Node globals", async () => {
+    const { result, violation } = await runPure(() =>
+      convert(loadInput("md"), "sample.md"),
+    );
+    expect(violation, violation ?? "").toBeNull();
+    expect(result.markdown.length).toBeGreaterThan(0);
   });
 
-  it.skip("docx → markdown does not access Node Buffer/fs (activate in GST-8)", async () => {
-    // TODO: import mammoth converter, convert a fixture, assert markdown output.
+  it("csv → markdown does not directly access Node globals", async () => {
+    const { result, violation } = await runPure(() =>
+      convert(loadInput("csv"), "sample.csv"),
+    );
+    expect(violation, violation ?? "").toBeNull();
+    expect(result.markdown).toContain("|");
   });
 
-  it.skip("pdf → markdown does not access Node Buffer/fs (activate in GST-9)", async () => {
-    // TODO: import pdfjs converter, convert a fixture, assert markdown output.
+  it("json → markdown does not directly access Node globals", async () => {
+    const { result, violation } = await runPure(() =>
+      convert(loadInput("json"), "sample.json"),
+    );
+    expect(violation, violation ?? "").toBeNull();
+    expect(result.markdown).toContain("```json");
   });
 
-  it.skip("xlsx → markdown does not access Node Buffer/fs (activate in GST-10)", async () => {
-    // TODO: import xlsx converter, convert a fixture, assert markdown output.
+  it("xml → markdown does not directly access Node globals", async () => {
+    const { result, violation } = await runPure(() =>
+      convert(loadInput("xml"), "sample.xml"),
+    );
+    expect(violation, violation ?? "").toBeNull();
+    expect(result.markdown).toContain("```xml");
   });
 
-  it.skip("zip/epub → markdown does not access Node Buffer/fs (activate in GST-11)", async () => {
-    // TODO: import jszip converter, convert a fixture, assert markdown output.
+  it("html → markdown does not directly access Node globals", async () => {
+    const { result, violation } = await runPure(() =>
+      convert(loadInput("html"), "sample.html"),
+    );
+    expect(violation, violation ?? "").toBeNull();
+    // happy-dom's DOMParser + turndown may produce empty output but the
+    // conversion must not error (fidelity: 'high' = turndown succeeded).
+    expect(result.stats.fidelity).toBe("high");
   });
+
+  it("docx → markdown does not directly access Node globals", async () => {
+    // mammoth uses Buffer internally in Node (it has a browser build that doesn't);
+    // the proxy only flags direct access from src/converters/, not from node_modules.
+    const { result, violation } = await runPure(() =>
+      convert(loadInput("docx"), "sample.docx"),
+    );
+    expect(violation, violation ?? "").toBeNull();
+    expect(result.stats.fidelity).not.toBe("failed");
+    expect(result.markdown).toContain("Sample Document Heading");
+  });
+
+  it("xlsx → markdown does not directly access Node globals", async () => {
+    // SheetJS uses Buffer in Node (has browser build); same filtering applies.
+    const { result, violation } = await runPure(() =>
+      convert(loadInput("xlsx"), "sample.xlsx"),
+    );
+    expect(violation, violation ?? "").toBeNull();
+    expect(result.markdown).toContain("|");
+  });
+
+  it("pptx → markdown does not directly access Node globals", async () => {
+    // JSZip conditionally uses Buffer.from in Node (browser build omits this).
+    const { result, violation } = await runPure(() =>
+      convert(loadInput("pptx"), "sample.pptx"),
+    );
+    expect(violation, violation ?? "").toBeNull();
+    expect(result.markdown).toContain("Slide");
+  });
+
+  // pdf is intentionally excluded: pdf.ts uses node:module to resolve the
+  // pdfjs worker path in Node; that is a known, documented limitation.
 });

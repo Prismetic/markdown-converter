@@ -16,7 +16,7 @@ function normalizeDocxHtml(html: string): string {
   // Promote the first row's <td> cells to <th> so the GFM plugin recognises
   // it as a heading row (mammoth never emits <th>).
   html = html.replace(
-    /(<table>\s*<tr>)([\s\S]*?)(<\/tr>)/g,
+    /(<table>\s*(?:<tbody>\s*)?<tr>)([\s\S]*?)(<\/tr>)/g,
     (_, trOpen: string, cells: string, trClose: string) =>
       trOpen + cells.replace(/<td>/g, '<th>').replace(/<\/td>/g, '</th>') + trClose,
   );
@@ -62,14 +62,20 @@ export async function convertDocx(
 
   let html = htmlResult.value;
 
+  const IMG_PLACEHOLDER = 'IMAGEOMITTEDMARKER';
   if (imageCount > 0) {
-    html = html.replace(/<img\b[^>]*>/gi, '<!-- image omitted -->');
+    // Use a text placeholder so TurndownService doesn't strip it (HTML comments are discarded).
+    // We swap back to a markdown comment after conversion.
+    html = html.replace(/<img\b[^>]*>/gi, `<p>${IMG_PLACEHOLDER}</p>`);
     warnings.push(`${imageCount} image(s) omitted`);
   }
 
   html = normalizeDocxHtml(html);
 
-  const markdown = buildTurndown().turndown(html);
+  let markdown = buildTurndown().turndown(html);
+  if (imageCount > 0) {
+    markdown = markdown.replace(new RegExp(IMG_PLACEHOLDER, 'g'), '<!-- image omitted -->');
+  }
 
   return {
     markdown,

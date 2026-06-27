@@ -1,18 +1,38 @@
 #!/usr/bin/env node
 /**
- * Flagless CLI harness for @tool/core.
- * Stub — exits 1 until the convert() router is implemented.
+ * CLI harness for @tool/core.
+ * Usage: node tools/run-core.js <file>
+ * Reads the file, converts it, and prints the markdown to stdout.
  */
 
-import { createRequire } from "module";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+
+const filePath = process.argv[2];
+if (!filePath) {
+  console.error("Usage: node tools/run-core.js <file>");
+  process.exit(1);
+}
+
 const _require = createRequire(import.meta.url);
-const pkg = _require("../dist/node/index.cjs");
+const { convert } = _require("../dist/node/index.cjs");
 
-console.error("Usage: cat <file> | node tools/run-core.js <mimeType>");
-console.error("");
-console.error("Example:");
-console.error("  cat document.docx | node tools/run-core.js application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-console.error("");
-console.error("Status: not implemented (converter not yet wired — see GST-7)");
+const buf = readFileSync(filePath);
+const filename = filePath.replace(/.*[\\/]/, "");
 
-process.exit(1);
+const result = await convert(new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength), filename);
+
+if (result.stats.warnings.length > 0) {
+  for (const w of result.stats.warnings) {
+    process.stderr.write(`[warn] ${w}\n`);
+  }
+}
+
+process.stdout.write(result.markdown + "\n");
+process.stderr.write(
+  `[info] fidelity=${result.stats.fidelity} inputBytes=${result.stats.inputBytes} outputBytes=${result.stats.outputBytes} durationMs=${result.stats.durationMs}\n`,
+);
+
+if (result.stats.fidelity === "failed") {
+  process.exit(1);
+}

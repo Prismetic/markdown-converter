@@ -5,10 +5,12 @@ import type { ConversionResult } from '../types.js';
 // Lazily resolve the pdfjs worker path — Node.js only.
 // In browsers this block is never reached; node:module stays external in the
 // browser ESM bundle so the dynamic import below doesn't get inlined.
-let _workerSrcResolved = false;
-async function ensureWorkerSrc(): Promise<void> {
-  if (_workerSrcResolved) return;
-  _workerSrcResolved = true;
+let _workerSrcPromise: Promise<void> | null = null;
+function ensureWorkerSrc(): Promise<void> {
+  if (!_workerSrcPromise) _workerSrcPromise = _resolveWorkerSrc();
+  return _workerSrcPromise;
+}
+async function _resolveWorkerSrc(): Promise<void> {
   if (typeof process !== 'undefined' && typeof process.versions?.node === 'string') {
     const { createRequire } = await import('node:module');
     const _require = createRequire(import.meta.url);
@@ -25,7 +27,7 @@ export async function convertPdf(input: Uint8Array): Promise<ConversionResult> {
     const loadingTask = getDocument({ data: input.slice(0), useSystemFonts: true, disableFontFace: true });
     const pdf = await loadingTask.promise;
 
-    let markdown: string;
+    let markdown = '';
     try {
       const pageTexts: string[] = [];
 

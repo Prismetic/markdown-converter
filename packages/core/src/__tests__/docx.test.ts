@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import JSZip from 'jszip';
 import { convertDocx } from '../converters/docx.js';
+
+const GOLDEN_DIR = join(import.meta.dirname, '..', '..', 'golden');
 
 const WORD_NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
 
@@ -77,5 +81,16 @@ describe('convertDocx()', () => {
     const result = await convertDocx(new Uint8Array([1, 2, 3, 4]));
     expect(result.stats.fidelity).toBe('failed');
     expect(result.stats.warnings.length).toBeGreaterThan(0);
+  });
+
+  it('sets fidelity:degraded and emits image comment when DOCX contains images', async () => {
+    // Use the golden sample.docx which contains an embedded image — verified to
+    // trigger the imageCount > 0 path in convertDocx.
+    const buf = readFileSync(join(GOLDEN_DIR, 'inputs', 'sample.docx'));
+    const bytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+    const result = await convertDocx(bytes);
+    expect(result.stats.fidelity).toBe('degraded');
+    expect(result.stats.warnings.some(w => w.includes('image'))).toBe(true);
+    expect(result.markdown).toContain('<!-- image omitted -->');
   });
 });
