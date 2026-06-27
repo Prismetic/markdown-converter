@@ -1,31 +1,28 @@
-import type { ConversionResult } from '../types.js';
+import TurndownService from 'turndown';
+import { gfm } from 'turndown-plugin-gfm';
+import type { ConversionResult, ConvertOpts } from '../types.js';
 
-export function convertHtml(input: Uint8Array): ConversionResult {
+export async function convertHtml(
+  input: Uint8Array,
+  _opts?: ConvertOpts,
+): Promise<ConversionResult> {
   const start = Date.now();
+
+  const td = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
+  td.use(gfm);
+
   const raw = new TextDecoder().decode(input);
-
-  // Strip tags, decode common HTML entities, collapse whitespace.
-  const text = raw
+  // Strip script/style blocks before turndown so their content doesn't appear as text.
+  const html = raw
     .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
-    .replace(/&nbsp;/g, ' ')
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+    .replace(/<style[\s\S]*?<\/style>/gi, '');
+  const markdown = td.turndown(html);
 
-  const markdown = text;
   return {
     markdown,
     stats: {
-      fidelity: 'degraded',
-      warnings: ['HTML structure and styling not preserved (text-tier converter)'],
+      fidelity: 'high',
+      warnings: [],
       durationMs: Date.now() - start,
       inputBytes: input.byteLength,
       outputBytes: markdown.length,

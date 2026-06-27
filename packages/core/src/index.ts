@@ -7,6 +7,8 @@ import type { ConversionResult, ConvertOpts } from './types.js';
 import { convertTxt, convertMd } from './converters/passthrough.js';
 import { convertCsv, convertJson, convertXml } from './converters/structured.js';
 import { convertHtml } from './converters/html.js';
+import { convertDocx } from './converters/docx.js';
+import { convertXlsx } from './converters/xlsx.js';
 import { convertPptx } from './converters/pptx.js';
 import { convertPdf } from './converters/pdf.js';
 
@@ -41,6 +43,8 @@ export async function convert(
     case 'json': return convertJson(input);
     case 'xml':  return convertXml(input);
     case 'html': return convertHtml(input);
+    case 'docx': return convertDocx(input);
+    case 'xlsx': return convertXlsx(input);
     case 'pptx': return convertPptx(input);
     case 'pdf':  return convertPdf(input);
     default:
