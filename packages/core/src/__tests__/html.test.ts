@@ -23,8 +23,18 @@ describe('convertHtml()', () => {
 
   it('converts bold and italic to markdown syntax', async () => {
     const result = await convertHtml(enc('<p><strong>bold</strong> and <em>italic</em></p>'));
-    expect(result.markdown).toContain('bold');
+    expect(result.markdown).toContain('**bold**');
     expect(result.markdown).toContain('italic');
+  });
+
+  it('converts table with thead to GFM format', async () => {
+    const html =
+      '<table><thead><tr><th>Name</th><th>Score</th></tr></thead>' +
+      '<tbody><tr><td>Alice</td><td>95</td></tr></tbody></table>';
+    const result = await convertHtml(enc(html));
+    expect(result.markdown).toContain('| Name |');
+    expect(result.markdown).toContain('| --- |');
+    expect(result.markdown).toContain('| Alice |');
   });
 
   it('sets outputBytes to markdown length', async () => {

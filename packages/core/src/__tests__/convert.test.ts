@@ -34,7 +34,7 @@ describe('convert()', () => {
     expect(result.stats.durationMs).toBeGreaterThanOrEqual(0);
   });
 
-  it('returns fidelity:failed (stub) for a known format', async () => {
+  it('returns fidelity:failed for invalid bytes of a known format', async () => {
     const result = await convert(new Uint8Array([0xd0, 0xcf]), 'report.docx');
     expect(result.stats.fidelity).toBe('failed');
     expect(result.stats.warnings.length).toBeGreaterThan(0);
