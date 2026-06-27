@@ -40,6 +40,20 @@ describe('CSV converter', () => {
     expect(result.markdown).toMatch(/\| --- \| --- \|/);
     expect(result.markdown).toMatch(/\| Alice \| 30 \|/);
   });
+
+  it('escapes pipe characters in cell values to avoid GFM table corruption', async () => {
+    const csv = 'A,B\nfoo|bar,baz';
+    const result = await convert(enc(csv), 'pipes.csv');
+    expect(result.stats.fidelity).toBe('high');
+    expect(result.markdown).toContain('foo\\|bar');
+    const rows = result.markdown.split('\n');
+    for (const row of rows) {
+      if (row.startsWith('|')) {
+        // Each GFM row must have exactly the right number of columns (3 pipes = 2 cols)
+        expect((row.match(/(?<!\\)\|/g) ?? []).length).toBe(3);
+      }
+    }
+  });
 });
 
 describe('JSON converter', () => {

@@ -5,7 +5,9 @@ function sheetToGfm(sheet: XLSX.WorkSheet): string {
   const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' }) as unknown[][];
   if (rows.length === 0) return '';
 
-  const stringRows = rows.map(row => row.map(cell => String(cell ?? '')));
+  const stringRows = rows.map(row =>
+    row.map(cell => String(cell ?? '').replace(/\r?\n/g, ' ').replace(/\|/g, '\\|')),
+  );
   const header = stringRows[0];
   const separator = header.map(() => '---');
 
