@@ -1,10 +1,10 @@
 // MV3 service worker — lifecycle only; message relay added in M2
-declare const self: ServiceWorkerGlobalScope;
+const sw = self as unknown as ServiceWorkerGlobalScope;
 
-self.addEventListener('install', () => {
-  self.skipWaiting();
+sw.addEventListener('install', () => {
+  void sw.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+sw.addEventListener('activate', (event) => {
+  event.waitUntil(sw.clients.claim());
 });

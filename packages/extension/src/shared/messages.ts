@@ -3,6 +3,7 @@ export interface ConversionStats {
   warnings: string[];
   durationMs: number;
   inputBytes: number;
+  outputBytes: number;
 }
 
 export type ExtMsg =

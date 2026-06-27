@@ -9,6 +9,7 @@
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
     "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.sw.json --noEmit",
     "size-check": "bash ../../scripts/check-size.sh _dist"
   },
   "dependencies": {
