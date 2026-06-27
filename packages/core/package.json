@@ -1,0 +1,46 @@
+{
+  "name": "@tool/core",
+  "version": "0.1.0",
+  "description": "Document format conversion core library",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/node/index.cjs",
+  "module": "dist/browser/index.esm.js",
+  "exports": {
+    ".": {
+      "browser": "./dist/browser/index.esm.js",
+      "require": "./dist/node/index.cjs",
+      "import": "./dist/node/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npm run build:browser && npm run build:node",
+    "build:browser": "TARGET=browser rollup -c rollup.config.ts",
+    "build:node": "TARGET=node rollup -c rollup.config.ts",
+    "test": "vitest run",
+    "test:purity": "vitest run src/__tests__/purity.test.ts",
+    "scan:purity": "! grep -q \"require('fs')\" dist/browser/index.esm.js && echo 'purity scan passed' || (echo 'FAIL: fs require found in browser bundle' && exit 1)"
+  },
+  "dependencies": {
+    "jszip": "3.10.1",
+    "mammoth": "1.8.0",
+    "pdfjs-dist": "4.6.82",
+    "turndown": "7.2.0",
+    "turndown-plugin-gfm": "1.0.2",
+    "xlsx": "0.18.5"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.9",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "happy-dom": "^20.10.6",
+    "rollup": "^4.62.2",
+    "tslib": "^2.8.1",
+    "tsx": "^4.22.4",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}
