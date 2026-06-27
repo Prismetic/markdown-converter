@@ -4,6 +4,8 @@ export type { SupportedFormat } from './detect.js';
 
 import { detectFormat } from './detect.js';
 import type { ConversionResult, ConvertOpts } from './types.js';
+import { convertTxt, convertMd } from './converters/passthrough.js';
+import { convertCsv, convertJson, convertXml } from './converters/structured.js';
 
 export async function convert(
   input: Uint8Array,
@@ -29,15 +31,22 @@ export async function convert(
     };
   }
 
-  // Stub: dispatch to converter modules wired in subsequent subtasks (GST-8+)
-  return {
-    markdown: '',
-    stats: {
-      fidelity: 'failed',
-      warnings: [`Converter for ${format} not yet implemented`],
-      durationMs: Date.now() - start,
-      inputBytes,
-      outputBytes: 0,
-    },
-  };
+  switch (format) {
+    case 'txt':  return convertTxt(input);
+    case 'md':   return convertMd(input);
+    case 'csv':  return convertCsv(input);
+    case 'json': return convertJson(input);
+    case 'xml':  return convertXml(input);
+    default:
+      return {
+        markdown: '',
+        stats: {
+          fidelity: 'failed',
+          warnings: [`Converter for ${format} not yet implemented`],
+          durationMs: Date.now() - start,
+          inputBytes,
+          outputBytes: 0,
+        },
+      };
+  }
 }
