@@ -48,7 +48,8 @@ https://prismetic.github.io/markdown-converter/privacy-policy.html
 - [x] No host permissions in manifest
 - [x] No external network calls
 - [x] Privacy policy URL resolves publicly  → https://prismetic.github.io/markdown-converter/privacy-policy.html
-- [ ] All 5 screenshots uploaded (1280×800 or 640×400 px)
+- [x] All 5 screenshots present (1280×800) — store-assets/screenshots/
+- [x] 440×280 promotional tile — store-assets/promo-tile-440x280.png
 - [x] icons/icon32.png present
 - [x] icons/icon128.png present
 - [x] manifest.json has `homepage_url`, `author`, `minimum_chrome_version: "120"`
