@@ -17,22 +17,27 @@ export async function convertPdf(input: Uint8Array): Promise<ConversionResult> {
     const loadingTask = getDocument({ data: input.slice(0), useSystemFonts: true, disableFontFace: true });
     const pdf = await loadingTask.promise;
 
-    const pageTexts: string[] = [];
+    let markdown: string;
+    try {
+      const pageTexts: string[] = [];
 
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      const lines: string[] = [];
-      for (const item of textContent.items) {
-        if ('str' in item) {
-          const ti = item as TextItem;
-          if (ti.str.trim()) lines.push(ti.str);
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const lines: string[] = [];
+        for (const item of textContent.items) {
+          if ('str' in item) {
+            const ti = item as TextItem;
+            if (ti.str.trim()) lines.push(ti.str);
+          }
         }
+        if (lines.length > 0) pageTexts.push(lines.join('\n'));
       }
-      if (lines.length > 0) pageTexts.push(lines.join('\n'));
-    }
 
-    const markdown = pageTexts.join('\n\n---\n\n');
+      markdown = pageTexts.join('\n\n---\n\n');
+    } finally {
+      await pdf.destroy();
+    }
 
     return {
       markdown,
