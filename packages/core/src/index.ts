@@ -6,6 +6,8 @@ import { detectFormat } from './detect.js';
 import type { ConversionResult, ConvertOpts } from './types.js';
 import { convertTxt, convertMd } from './converters/passthrough.js';
 import { convertCsv, convertJson, convertXml } from './converters/structured.js';
+import { convertPptx } from './converters/pptx.js';
+import { convertPdf } from './converters/pdf.js';
 
 export async function convert(
   input: Uint8Array,
@@ -37,6 +39,8 @@ export async function convert(
     case 'csv':  return convertCsv(input);
     case 'json': return convertJson(input);
     case 'xml':  return convertXml(input);
+    case 'pptx': return convertPptx(input);
+    case 'pdf':  return convertPdf(input);
     default:
       return {
         markdown: '',
