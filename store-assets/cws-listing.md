@@ -38,16 +38,20 @@ Chrome 120 or later.
 
 ---
 
+## Privacy Policy URL
+
+https://prismetic.github.io/markdown-converter/privacy-policy.html
+
 ## Pre-submit checklist
 
-- [ ] Extension zip ≤ 2 MB
-- [ ] No host permissions in manifest
-- [ ] No external network calls
-- [ ] Privacy policy URL resolves publicly
+- [x] Extension zip ≤ 2 MB  (735 KB)
+- [x] No host permissions in manifest
+- [x] No external network calls
+- [x] Privacy policy URL resolves publicly  → https://prismetic.github.io/markdown-converter/privacy-policy.html
 - [ ] All 5 screenshots uploaded (1280×800 or 640×400 px)
-- [ ] icons/icon32.png present
-- [ ] icons/icon128.png present
-- [ ] manifest.json has `homepage_url`, `author`, `minimum_chrome_version: "120"`
+- [x] icons/icon32.png present
+- [x] icons/icon128.png present
+- [x] manifest.json has `homepage_url`, `author`, `minimum_chrome_version: "120"`
 
 ## Screenshot plan (5 required, 1280×800 or 640×400)
 
