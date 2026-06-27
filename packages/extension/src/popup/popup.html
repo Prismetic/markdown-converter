@@ -14,13 +14,16 @@
         <p class="formats">DOCX · PDF · XLSX · HTML · PPTX · TXT · MD · CSV · JSON · XML</p>
         <input type="file" id="file-input" hidden />
       </div>
+      <div id="spinner" hidden>
+        <span class="spinner-icon"></span> Converting…
+      </div>
       <div id="output-area" hidden>
         <textarea id="output" readonly></textarea>
         <div class="actions">
           <button id="copy-btn">Copy to Clipboard</button>
           <button id="download-btn">Download .md</button>
         </div>
-        <div id="stats"></div>
+        <div id="stats" data-testid="stats"></div>
       </div>
       <div id="error-area" hidden></div>
     </main>

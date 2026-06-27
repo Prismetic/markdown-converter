@@ -1,4 +1,4 @@
-import type { ConversionStats } from '../shared/messages.js';
+import type { ConversionStats } from '@tool/core';
 
 export function renderStats(stats: ConversionStats): string {
   const w = stats.warnings.length;

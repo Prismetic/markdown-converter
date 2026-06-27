@@ -1,12 +1,8 @@
-export interface ConversionStats {
-  fidelity: 'high' | 'degraded' | 'failed';
-  warnings: string[];
-  durationMs: number;
-  inputBytes: number;
-  outputBytes: number;
-}
+export type { ConversionStats } from '@tool/core';
+
+import type { ConversionStats } from '@tool/core';
 
 export type ExtMsg =
-  | { type: 'CONVERT_PDF'; payload: { bytes: number[]; filename: string } }
-  | { type: 'CONVERT_PDF_RESULT'; markdown: string; stats: ConversionStats }
-  | { type: 'CONVERT_PDF_ERROR'; error: string };
+  | { type: 'convert'; file: Uint8Array; filename: string }
+  | { type: 'result'; markdown: string; stats?: ConversionStats }
+  | { type: 'error'; error: string };
