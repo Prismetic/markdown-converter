@@ -1,7 +1,10 @@
 import { test as base, expect, chromium } from '@playwright/test';
 import type { BrowserContext } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { join, resolve, dirname } from 'node:path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const EXTENSION_DIR = resolve(__dirname, '..', '_dist');
 const FIXTURES_DIR = join(__dirname, 'fixtures');
@@ -28,7 +31,6 @@ const test = base.extend<ExtensionFixtures>({
       args.push('--headless=new');
     }
     const context = await chromium.launchPersistentContext('', {
-      channel: 'chrome',
       headless: false,
       args,
     });
@@ -75,8 +77,8 @@ const FORMATS = [
 
 for (const fmt of FORMATS) {
   test(`popup converts .${fmt} to markdown`, async ({ page, extensionId }) => {
-    // 1. Open popup via chrome-extension:// URL
-    await page.goto(`chrome-extension://${extensionId}/popup/popup.html`);
+    // 1. Open popup via chrome-extension:// URL (Vite preserves src/ hierarchy in dist)
+    await page.goto(`chrome-extension://${extensionId}/src/popup/popup.html`);
     await page.waitForLoadState('domcontentloaded');
 
     // 2. Drop golden fixture via the file input

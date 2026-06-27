@@ -14,8 +14,8 @@ async function ensureOffscreenDoc(): Promise<void> {
   if (await chrome.offscreen.hasDocument()) return;
   await chrome.offscreen.createDocument({
     url: 'src/offscreen/offscreen.html',
-    reasons: [chrome.offscreen.Reason.BLOBS],
-    justification: 'PDF text extraction via pdfjs-dist',
+    reasons: [chrome.offscreen.Reason.WORKERS],
+    justification: 'PDF conversion via pdfjs-dist web worker',
   });
 }
 

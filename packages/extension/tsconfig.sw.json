@@ -7,5 +7,5 @@
     "lib": ["ES2022", "WebWorker"],
     "noEmit": true
   },
-  "include": ["src/background", "src/shared"]
+  "include": ["src/background", "src/shared", "src/types"]
 }

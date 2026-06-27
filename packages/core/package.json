@@ -8,6 +8,7 @@
   "module": "dist/browser/index.esm.js",
   "exports": {
     ".": {
+      "types": "./dist/types.d.ts",
       "browser": "./dist/browser/index.esm.js",
       "require": "./dist/node/index.cjs",
       "import": "./dist/node/index.cjs"
