@@ -1,0 +1,81 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --bg: #fff;
+  --fg: #1a1a1a;
+  --border: #d0d0d0;
+  --accent: #4a6cf7;
+  --zone-bg: #f8f9ff;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1e1e;
+    --fg: #e8e8e8;
+    --border: #404040;
+    --zone-bg: #2a2a2a;
+  }
+}
+
+body {
+  width: 420px;
+  min-height: 500px;
+  margin: 0;
+  padding: 16px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+h1 { font-size: 16px; margin: 0 0 16px; }
+
+#drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 32px 16px;
+  text-align: center;
+  background: var(--zone-bg);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+#drop-zone:hover, #drop-zone.drag-over { border-color: var(--accent); }
+#drop-zone .formats { font-size: 12px; color: #888; margin-top: 8px; }
+
+#output {
+  width: 100%;
+  height: 200px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 8px;
+  font-family: monospace;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.actions { display: flex; gap: 8px; margin-top: 8px; }
+
+button {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+button:hover { opacity: 0.9; }
+
+#stats { font-size: 12px; color: #888; margin-top: 8px; }
+
+#error-area {
+  padding: 8px;
+  border-radius: 4px;
+  background: #fff0f0;
+  color: #c0392b;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+[hidden] { display: none !important; }

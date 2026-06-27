@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Markdown Converter",
+  "version": "1.0.0",
+  "description": "Convert DOCX, PDF, XLSX, HTML and other formats to Markdown — locally, with zero network access.",
+  "minimum_chrome_version": "120",
+  "permissions": ["offscreen"],
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "32": "icons/icon32.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background/sw.ts",
+    "type": "module"
+  },
+  "icons": {
+    "32": "icons/icon32.png",
+    "128": "icons/icon128.png"
+  }
+}

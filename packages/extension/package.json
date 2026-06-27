@@ -1,0 +1,23 @@
+{
+  "name": "@tool/extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:e2e": "echo 'E2E not yet configured' && exit 0"
+  },
+  "dependencies": {
+    "@tool/core": "*"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.2.0",
+    "terser": "^5.48.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.19",
+    "vite-plugin-web-extension": "^4.5.1",
+    "vitest": "^2.1.9"
+  }
+}

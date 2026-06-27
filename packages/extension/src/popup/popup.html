@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Markdown Converter</title>
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <header><h1>Markdown Converter</h1></header>
+    <main>
+      <div id="drop-zone">
+        <p>Drop a file here, or click to browse</p>
+        <p class="formats">DOCX · PDF · XLSX · HTML · PPTX · TXT · MD · CSV · JSON · XML</p>
+        <input type="file" id="file-input" hidden />
+      </div>
+      <div id="output-area" hidden>
+        <textarea id="output" readonly></textarea>
+        <div class="actions">
+          <button id="copy-btn">Copy to Clipboard</button>
+          <button id="download-btn">Download .md</button>
+        </div>
+        <div id="stats"></div>
+      </div>
+      <div id="error-area" hidden></div>
+    </main>
+    <script type="module" src="./popup.ts"></script>
+  </body>
+</html>

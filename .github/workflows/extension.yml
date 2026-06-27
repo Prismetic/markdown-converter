@@ -1,0 +1,40 @@
+name: Extension CI
+
+on:
+  push:
+    paths:
+      - 'packages/extension/**'
+      - 'packages/core/**'
+      - 'scripts/check-size.sh'
+      - '.github/workflows/extension.yml'
+  pull_request:
+    paths:
+      - 'packages/extension/**'
+      - 'packages/core/**'
+      - 'scripts/check-size.sh'
+      - '.github/workflows/extension.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install workspace deps
+        run: npm ci
+
+      - name: Build @tool/core
+        run: npm run build
+        working-directory: packages/core
+
+      - name: Build extension
+        run: npm run build
+        working-directory: packages/extension
+
+      - name: Size gate
+        run: bash scripts/check-size.sh packages/extension/_dist
