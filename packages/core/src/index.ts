@@ -10,7 +10,8 @@ import { convertHtml } from './converters/html.js';
 import { convertDocx } from './converters/docx.js';
 import { convertXlsx } from './converters/xlsx.js';
 import { convertPptx } from './converters/pptx.js';
-import { convertPdf } from './converters/pdf.js';
+import { convertPdf, setPdfWorkerSrc } from './converters/pdf.js';
+export { setPdfWorkerSrc };
 
 export async function convert(
   input: Uint8Array,

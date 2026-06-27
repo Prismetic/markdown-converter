@@ -1,5 +1,12 @@
-import { convert } from '@tool/core';
+import { convert, setPdfWorkerSrc } from '@tool/core';
 import type { ExtMsg } from '../shared/messages.js';
+
+// pdfjs 4.x requires workerSrc; configure it to the copy bundled in public/.
+// Must use chrome.runtime.getURL so the worker has the same chrome-extension://
+// origin as this offscreen document (pdfjs enforces same-origin for workers).
+if (typeof chrome !== 'undefined' && typeof chrome.runtime?.getURL === 'function') {
+  setPdfWorkerSrc(chrome.runtime.getURL('pdf.worker.min.mjs'));
+}
 
 chrome.runtime.onMessage.addListener(
   (message: ExtMsg, _sender, sendResponse: (r: ExtMsg) => void) => {

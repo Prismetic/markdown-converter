@@ -18,6 +18,13 @@ async function _resolveWorkerSrc(): Promise<void> {
   }
 }
 
+/** Let callers in non-Node contexts (e.g. extension offscreen doc) set the pdfjs
+ *  worker URL before the first conversion. Must be called with a URL in the same
+ *  origin as the caller (chrome.runtime.getURL(...) in extensions). */
+export function setPdfWorkerSrc(src: string): void {
+  GlobalWorkerOptions.workerSrc = src;
+}
+
 export async function convertPdf(input: Uint8Array): Promise<ConversionResult> {
   await ensureWorkerSrc();
   const start = Date.now();
